@@ -9,14 +9,20 @@ use std::{
 use crate::{
 	rest_api::RestAPIClient,
 	socket::*,
+	config::*,
 };
 use serde_json::json;
+use tokio_tungstenite::tungstenite::{
+	Error,
+	Message
+};
 
 pub struct APIClient {
 	pub rest_client: RestAPIClient,
 	pub socket: SocketHandler,
 	pub sock_msgs: Arc<RwLock<HashMap<String, mpsc::Sender<SocketResponse>>>>,
-	pub uses_rest: bool
+	pub uses_rest: bool,
+	pub chunk_size: usize,
 }
 
 impl APIClient {
@@ -59,6 +65,34 @@ impl APIClient {
 	}
 	*/
 
+	pub async fn new(config: SDKConfig, sender: mpsc::Sender<Result<Message, Error>>) -> anyhow::Result<APIClient> {
+		let chunk_size = config.chunk_size;
+		let uses_rest = config.use_rest;
+		let secure = config.secure;
+		let base_url = config.rest_base_url.to_owned();
+
+		let rest_client = RestAPIClient::new(config);
+		let sock_msgs = Arc::new(RwLock::new(HashMap::new()));
+
+		let url = url::Url::parse(&base_url)?;
+
+		let port = url.port().unwrap_or(8741);
+		let host = match url.host() {
+			None => "".to_owned(),
+			Some(h) => h.to_string()
+		};
+
+		let socket = SocketHandler::new(port as u32, &host, secure, Some(url.path()), sender).await?;
+
+		Ok(APIClient{
+			rest_client,
+			socket,
+			sock_msgs,
+			uses_rest,
+			chunk_size
+		})
+	}
+
 	pub async fn send_message(
 		&mut self,
 		chat: String,
@@ -78,8 +112,6 @@ impl APIClient {
 				.await;
 		}
 
-		let chunk_size = 51200;
-
 		let (datas, mut infos): (Vec<Vec<u8>>, Vec<(u32, String)>) = match attachments {
 			None => (vec![Vec::new()], Vec::new()),
 			Some(ref files) => files.iter().fold(
@@ -97,7 +129,7 @@ impl APIClient {
 						Err(_) => 0,
 					};
 
-					let len = (size as f64 / chunk_size as f64).ceil() as u32;
+					let len = (size as f64 / self.chunk_size as f64).ceil() as u32;
 
 					i.push((len, id));
 
@@ -131,10 +163,12 @@ impl APIClient {
 			let id = &(i.0).1;
 
 			for idx in 0..=len {
-				let chunk: Vec<u8> = data.drain(..std::cmp::min(data.len(), chunk_size)).collect();
+				let chunk: Vec<u8> = data.drain(..std::cmp::min(data.len(), self.chunk_size)).collect();
 				let base64_chunk = base64::encode(chunk);
 
-				self.socket.attachment_data(id, &msg_id, idx, &base64_chunk).await;
+				if let Err(err) = self.socket.attachment_data(id, &msg_id, idx, &base64_chunk).await {
+					eprintln!("aaarrrggghh issue: {:?}", err);
+				}
 			}
 		}
 

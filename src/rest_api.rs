@@ -12,7 +12,7 @@ pub struct RestAPIClient {
 }
 
 impl RestAPIClient {
-	pub fn new(config: SDKConfig, timeout: impl Into<u64>) -> RestAPIClient {
+	pub fn new(config: SDKConfig) -> RestAPIClient {
 		// these specific things are to make sure that the client can connect
 		// with SMServer, since it uses a self-signed cert and normally connects
 		// with an IP Address, not hostname
@@ -27,7 +27,7 @@ impl RestAPIClient {
 		let client = reqwest::Client::builder()
 			.use_native_tls()
 			.use_preconfigured_tls(tls)
-			.connect_timeout(Duration::from_secs(timeout.into()))
+			.connect_timeout(Duration::from_secs(config.timeout as u64))
 			.build()
 			.expect("Unable to build API Client");
 
@@ -53,7 +53,6 @@ impl RestAPIClient {
 	pub async fn authenticate(&mut self) -> anyhow::Result<bool> {
 		// authenticate with SMServer so that we can make more requests later
 		// without being denied
-		//let url = self.pass_req_string();
 		let pass = format!("requests?password={}", self.config.password());
 		let url = self.config.push_to_rest_url(pass);
 		let res = self.get_url_string(&url).await?;

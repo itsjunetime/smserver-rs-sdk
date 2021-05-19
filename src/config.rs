@@ -2,7 +2,10 @@ pub struct SDKConfig {
 	pub rest_base_url: String,
 	pub sock_base_url: String,
 	pub password: String,
-	pub chunk_size: u32 // in bytes
+	pub timeout: usize, // in seconds
+	pub chunk_size: usize, // in bytes
+	pub use_rest: bool,
+	pub secure: bool,
 }
 
 impl SDKConfig {
@@ -11,7 +14,10 @@ impl SDKConfig {
 			rest_base_url: "".to_owned(),
 			sock_base_url: "".to_owned(),
 			password: "toor".to_owned(),
-			chunk_size: 51200
+			timeout: 10,
+			chunk_size: 51200,
+			use_rest: true,
+			secure: true,
 		}
 	}
 
@@ -30,8 +36,23 @@ impl SDKConfig {
 		self
 	}
 
-	pub fn with_chunk_size(&mut self, size: u32) -> &mut SDKConfig {
+	pub fn with_chunk_size(&mut self, size: usize) -> &mut SDKConfig {
 		self.chunk_size = size;
+		self
+	}
+
+	pub fn with_timeout(&mut self, time: usize) -> &mut SDKConfig {
+		self.timeout = time;
+		self
+	}
+
+	pub fn with_rest(&mut self, rest: bool) -> &mut SDKConfig {
+		self.use_rest = rest;
+		self
+	}
+
+	pub fn with_secure(&mut self, sec: bool) -> &mut SDKConfig {
+		self.secure = sec;
 		self
 	}
 
