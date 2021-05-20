@@ -1,8 +1,8 @@
-mod commands;
-mod config;
-mod rest_api;
-mod error;
-mod models;
-mod registration_type;
-mod socket;
-mod api;
+pub mod commands;
+pub mod config;
+pub mod rest_api;
+pub mod error;
+pub mod models;
+pub mod registration_type;
+pub mod socket;
+pub mod api;
