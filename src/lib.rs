@@ -6,8 +6,7 @@ pub mod commands;
 pub mod config;
 pub mod error;
 pub mod api;
-
-mod rest_api;
-mod socket;
-mod registration_type;
-mod models;
+pub mod socket;
+pub mod rest_api;
+pub mod registration_type;
+pub mod models;
