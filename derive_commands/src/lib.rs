@@ -530,7 +530,7 @@ fn parse_data(
 					.expect(&format!("Unable to parse {} as TStream", param_type));
 
 				let val_quote = quote!{
-					#path: #type_stream
+					pub #path: #type_stream
 				};
 
 				let pstr = path.to_string();
@@ -550,8 +550,8 @@ fn parse_data(
 
 	let struct_quote = quote!{
 		pub struct #struct_name {
-			id: String,
-			command: #enum_name,
+			pub id: String,
+			pub command: #enum_name,
 			#(#values),*
 		}
 	};
