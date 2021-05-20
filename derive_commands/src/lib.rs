@@ -161,6 +161,7 @@ pub fn commands_derive(input: TokenStream) -> TokenStream {
 
 		// we impl it for crate::...::SocketHandler since it's the one
 		// with the send_command function and the SplitSink to send it with.
+
 		// Also this custom derive is only intended to be used
 		// with smserver-rs-sdk, so there's no need to make it agnostic or whatever
 		impl crate::socket::SocketHandler {
@@ -529,14 +530,16 @@ fn parse_data(
 				let type_stream: proc_macro2::TokenStream = param_type.parse()
 					.expect(&format!("Unable to parse {} as TStream", param_type));
 
-				let val_quote = quote!{
-					pub #path: #type_stream
+				let type_quote = quote!{
+					#path: #type_stream
 				};
+
+				let val_quote = quote!{ pub #type_quote };
 
 				let pstr = path.to_string();
 
 				let ser_quote = quote!{
-					let #val_quote = serde_json::from_value(self.data.get_mut(#pstr)
+					let #type_quote = serde_json::from_value(self.data.get_mut(#pstr)
 						.unwrap_or(&mut serde_json::Value::Null).take())?;
 				};
 
