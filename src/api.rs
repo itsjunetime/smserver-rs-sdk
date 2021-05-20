@@ -93,6 +93,10 @@ impl APIClient {
 		})
 	}
 
+	pub async fn authenticate(&mut self) -> anyhow::Result<bool> {
+		self.rest_client.authenticate().await
+	}
+
 	pub async fn send_message(
 		&mut self,
 		chat: String,
