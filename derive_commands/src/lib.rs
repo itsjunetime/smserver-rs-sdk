@@ -87,7 +87,8 @@ pub fn commands_derive(input: TokenStream) -> TokenStream {
 				// this just changes the get-chats to get_chats so it can be used
 				// as the name of a function
 				let fn_name = parsed.replace("-", "_");
-				let struct_name = format_ident!("{}Notification", ident.to_string());
+				let struct_name = 
+					format_ident!("{}Notification", ident.to_string());
 
 				for i in var.attrs.iter() {
 					// the name, either `parameters`, `data`, or `command`
@@ -130,7 +131,9 @@ pub fn commands_derive(input: TokenStream) -> TokenStream {
 							// generate the struct and the function to turn a
 							// SocketResponse into that struct
 							let (struct_gen, impl_gen) =
-								parse_data(meta, &fn_name, &struct_name, name, &config);
+								parse_data(
+									meta, &fn_name, &struct_name, name, &config
+								);
 							structs.push(struct_gen);
 							impls.push(impl_gen);
 						},
@@ -595,7 +598,11 @@ fn main_cmd(
 
 	let rest_section = match config.rest {
 		true => quote!{
-			return self.rest_client.#fn_ident(#(#names),*).await
+			if self.rest_client.authenticated {
+				return self.rest_client.#fn_ident(#(#names),*).await;
+			} else {
+				return Err(SDKError::UnAuthenticated.into());
+			}
 		},
 		_ => quote!{
 			return Err(SDKError::ConfigBlocked.into())
@@ -637,7 +644,9 @@ fn main_cmd(
 					}
 				};
 
-				let mut new_data = match base64::decode(json[#DATA_STR].as_str().unwrap()) {
+				let mut new_data = match base64::decode(
+					json[#DATA_STR].as_str().unwrap()
+				) {
 					Ok(val) => val,
 					Err(err) => return Err(err.into())
 				};
@@ -679,7 +688,7 @@ fn main_cmd(
 					Ok(id) => id,
 					Err(err) => return Err(err.into())
 				};
-				let (sender, receiver) = std::sync::mpsc::channel();
+				let (sender, receiver) = std::sync::mpsc::sync_channel(0);
 
 				if let Ok(mut msgs) = self.sock_msgs.write() {
 					msgs.insert(id, sender);

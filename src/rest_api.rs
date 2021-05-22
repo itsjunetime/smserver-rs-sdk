@@ -8,7 +8,7 @@ use crate::{
 pub struct RestAPIClient {
 	pub client: reqwest::Client,
 	pub config: SDKConfig,
-	authenticated: bool
+	pub authenticated: bool
 }
 
 impl RestAPIClient {

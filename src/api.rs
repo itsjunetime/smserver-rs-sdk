@@ -16,7 +16,7 @@ use serde_json::json;
 pub struct APIClient {
 	pub rest_client: RestAPIClient,
 	pub socket: SocketHandler,
-	pub sock_msgs: Arc<RwLock<HashMap<String, mpsc::Sender<SocketResponse>>>>,
+	pub sock_msgs: Arc<RwLock<HashMap<String, mpsc::SyncSender<SocketResponse>>>>,
 	pub uses_rest: bool,
 	pub chunk_size: usize,
 }
@@ -158,10 +158,13 @@ impl APIClient {
 			})
 			.collect();
 
-		let msg_id = match self.socket
-			.send_message(chat, text, subject, Some(serde_json::Value::Array(json_info)), photos_str)
-			.await {
-
+		let msg_id = match self.socket.send_message(
+			chat,
+			text,
+			subject,
+			Some(serde_json::Value::Array(json_info)),
+			photos_str
+		).await {
 			Ok(id) => id,
 			Err(err) => return Err(err.into())
 		};
@@ -172,10 +175,14 @@ impl APIClient {
 			let id = &(i.0).1;
 
 			for idx in 0..=len {
-				let chunk: Vec<u8> = data.drain(..std::cmp::min(data.len(), self.chunk_size)).collect();
+				let chunk: Vec<u8> = data.drain(
+					..std::cmp::min(data.len(), self.chunk_size)
+				).collect();
 				let base64_chunk = base64::encode(chunk);
 
-				if let Err(err) = self.socket.attachment_data(id, &msg_id, idx, &base64_chunk).await {
+				if let Err(err) = self.socket.attachment_data(
+					id, &msg_id, idx, &base64_chunk
+				).await {
 					eprintln!("aaarrrggghh issue: {:?}", err);
 				}
 			}
