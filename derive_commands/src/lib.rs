@@ -268,12 +268,11 @@ fn get_rest_fn(
 	let mut nvs = get_name_val_list(&params);
 	let fn_ident = Ident::new(&fn_name, Span::call_site());
 
-	let auth = if config.authenticate {
+	/*let auth = if config.authenticate {
 		quote!{ self.check_auth().await?; }
 	} else {
 		quote!{}
-	};
-
+	};*/
 
 	// the functions for a multipart form and a GET request look dramatically
 	// different, so we have to split here to cater to each
@@ -381,7 +380,7 @@ fn get_rest_fn(
 				&mut self,
 				#(#values),*
 			) -> anyhow::Result<()> {
-				#auth
+				self.check_auth().await?;
 
 				#req_str
 
@@ -542,8 +541,10 @@ fn parse_data(
 				let pstr = path.to_string();
 
 				let ser_quote = quote!{
-					let #type_quote = serde_json::from_value(self.data.get_mut(#pstr)
-						.unwrap_or(&mut serde_json::Value::Null).take())?;
+					let #type_quote = serde_json::from_value(
+						self.data.get_mut(#pstr)
+							.unwrap_or(&mut serde_json::Value::Null).take()
+					)?;
 				};
 
 				vals.push(val_quote);
