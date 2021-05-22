@@ -40,7 +40,7 @@ impl SocketHandler {
 		address: &str,
 		secure: bool,
 		subdirectory: Option<&str>,
-		channel_sender: mpsc::Sender<SocketResponse>
+		channel_sender: mpsc::SyncSender<SocketResponse>
 	) -> Result<SocketHandler, Error> {
 		let sock_res = SocketHandler::get_self_signed_socket(
 			port, address, secure, subdirectory
@@ -55,7 +55,7 @@ impl SocketHandler {
 
 	pub fn spawn_receiver(
 		receiver: SplitStream<WebSocketStream<TlsStream<TcpStream>>>,
-		channel_sender: mpsc::Sender<SocketResponse>
+		channel_sender: mpsc::SyncSender<SocketResponse>
 	) {
 		tokio::spawn(async move {
 			let mut rec = receiver;

@@ -62,7 +62,7 @@ impl APIClient {
 	*/
 
 	pub async fn new(
-		config: SDKConfig, sender: mpsc::Sender<SocketResponse>
+		config: SDKConfig, sender: mpsc::SyncSender<SocketResponse>
 	) -> anyhow::Result<APIClient> {
 		let chunk_size = config.chunk_size;
 		let uses_rest = config.use_rest;
