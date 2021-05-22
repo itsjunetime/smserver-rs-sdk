@@ -12,10 +12,6 @@ use crate::{
 	config::*,
 };
 use serde_json::json;
-use tokio_tungstenite::tungstenite::{
-	Error,
-	Message
-};
 
 pub struct APIClient {
 	pub rest_client: RestAPIClient,
@@ -65,7 +61,9 @@ impl APIClient {
 	}
 	*/
 
-	pub async fn new(config: SDKConfig, sender: mpsc::Sender<Result<Message, Error>>) -> anyhow::Result<APIClient> {
+	pub async fn new(
+		config: SDKConfig, sender: mpsc::Sender<SocketResponse>
+	) -> anyhow::Result<APIClient> {
 		let chunk_size = config.chunk_size;
 		let uses_rest = config.use_rest;
 		let secure = config.secure;
@@ -82,7 +80,13 @@ impl APIClient {
 			Some(h) => h.to_string()
 		};
 
-		let socket = SocketHandler::new(port as u32, &host, secure, Some(url.path()), sender).await?;
+		let socket = SocketHandler::new(
+			port as u32,
+			&host,
+			secure,
+			Some(url.path()),
+			sender
+		).await?;
 
 		Ok(APIClient{
 			rest_client,
@@ -116,7 +120,8 @@ impl APIClient {
 				.await;
 		}
 
-		let (datas, mut infos): (Vec<Vec<u8>>, Vec<(u32, String)>) = match attachments {
+		let (datas, mut infos): (Vec<Vec<u8>>, Vec<(u32, String)>) = 
+		match attachments {
 			None => (vec![Vec::new()], Vec::new()),
 			Some(ref files) => files.iter().fold(
 				(Vec::new(), Vec::new()), | (mut d, mut i), f | {

@@ -1,7 +1,8 @@
 use derive_commands::Commands;
 use std::str::FromStr;
+use serde::Deserialize;
 
-#[derive(Commands)]
+#[derive(Commands, Deserialize)]
 pub enum APICommand {
 	#[command(subdir = "requests", return_type = "Vec<crate::models::Conversation>")]
 	#[parameters(chats = "Option<u32>", chats_offset = "Option<u32>")]

@@ -25,7 +25,10 @@ use serde_json::{
 	json,
 	Value,
 };
-use crate::commands::*;
+use crate::{
+	commands::*,
+	socket::SocketResponse,
+};
 
 pub struct SocketHandler {
 	pub sender: SplitSink<WebSocketStream<TlsStream<TcpStream>>, Message>,
@@ -37,7 +40,7 @@ impl SocketHandler {
 		address: &str,
 		secure: bool,
 		subdirectory: Option<&str>,
-		channel_sender: mpsc::Sender<Result<Message, Error>>
+		channel_sender: mpsc::Sender<SocketResponse>
 	) -> Result<SocketHandler, Error> {
 		let sock_res = SocketHandler::get_self_signed_socket(
 			port, address, secure, subdirectory
@@ -52,16 +55,25 @@ impl SocketHandler {
 
 	pub fn spawn_receiver(
 		receiver: SplitStream<WebSocketStream<TlsStream<TcpStream>>>,
-		channel_sender: mpsc::Sender<Result<Message, Error>>
+		channel_sender: mpsc::Sender<SocketResponse>
 	) {
 		tokio::spawn(async move {
 			let mut rec = receiver;
 
-			while let Some(msg) = rec.next().await {
-				match channel_sender.send(msg) {
-					Err(err) =>
-						eprintln!("Failed to send mpsc message: {:?}", err),
-					_ => ()
+			while let Some(Ok(msg)) = rec.next().await {
+				let txt = match msg {
+					tokio_tungstenite::tungstenite::Message::Text(txt) => Some(txt),
+					_ => None,
+				};
+
+				if let Some(text) = txt {
+					if let Ok(resp) = serde_json::from_str(&text) {
+						match channel_sender.send(resp) {
+							Err(err) =>
+								eprintln!("Failed to send mpsc message: {:?}", err),
+							_ => ()
+						}
+					}
 				}
 			}
 		});
