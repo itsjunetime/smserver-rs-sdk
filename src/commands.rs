@@ -4,7 +4,10 @@ use serde::Deserialize;
 
 #[derive(Commands, Deserialize)]
 pub enum APICommand {
-	#[command(subdir = "requests", return_type = "Vec<crate::models::Conversation>")]
+	#[command(
+		subdir = "requests",
+		return_type = "Vec<crate::models::Conversation>"
+	)]
 	#[parameters(chats = "Option<u32>", chats_offset = "Option<u32>")]
 	GetChats,
 
@@ -29,16 +32,29 @@ pub enum APICommand {
 	#[parameters(chat = "&str")]
 	GetIcon,
 
-	#[command(subdir = "send", multipart = true, files = "attachments", no_main = true)]
+	#[command(
+		subdir = "send", 
+		multipart = true,
+		files = "attachments",
+		no_main = true
+	)]
 	#[parameters(
 		chat = "String",
 		text = "Option<String>",
 		subject = "Option<String>",
 		attachments = "Option<serde_json::Value>",
-		//photos = "Option<std::vec::Vec<String>>"
 		photos = "Option<String>"
 	)]
 	SendMessage,
+
+	#[parameters(tap_guid = "&str", tapback = "u16", remove_tap = "Option<bool>")]
+	SendTapback,
+
+	#[parameters(delete_chat = "&str")]
+	DeleteChat,
+
+	#[parameters(delete_text = "&str")]
+	DeleteText,
 
 	#[command(rest = false)]
 	#[parameters(
@@ -48,9 +64,6 @@ pub enum APICommand {
 		data = "&str",
 	)]
 	AttachmentData,
-
-	#[parameters(tap_guid = "&str", tapback = "u16", remove_tap = "Option<bool>")]
-	SendTapback,
 
 	#[parameters(chat = "&str", active = "bool")]
 	SendTyping,
