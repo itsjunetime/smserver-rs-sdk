@@ -38,7 +38,7 @@ pub enum APICommand {
 	GetIcon,
 
 	#[command(
-		subdir = "send", 
+		subdir = "send",
 		multipart = true,
 		files = "attachments",
 		no_main = true

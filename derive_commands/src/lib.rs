@@ -87,7 +87,7 @@ pub fn commands_derive(input: TokenStream) -> TokenStream {
 				// this just changes the get-chats to get_chats so it can be used
 				// as the name of a function
 				let fn_name = parsed.replace("-", "_");
-				let struct_name = 
+				let struct_name =
 					format_ident!("{}Notification", ident.to_string());
 
 				for i in var.attrs.iter() {

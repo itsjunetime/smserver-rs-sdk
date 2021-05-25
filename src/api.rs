@@ -104,7 +104,7 @@ impl APIClient {
 				.await;
 		}
 
-		let (datas, mut infos): (Vec<Vec<u8>>, Vec<(u32, String)>) = 
+		let (datas, mut infos): (Vec<Vec<u8>>, Vec<(u32, String)>) =
 		match attachments {
 			None => (vec![Vec::new()], Vec::new()),
 			Some(ref files) => files.iter().fold(

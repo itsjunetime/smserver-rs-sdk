@@ -67,7 +67,7 @@ impl RestAPIClient {
 				false => return Err(SDKError::UnAuthenticated.into()),
 			}
 		}
-		
+
 		Ok(())
 	}
 
