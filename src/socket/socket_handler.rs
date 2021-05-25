@@ -1,7 +1,12 @@
 use std::{
 	thread::sleep,
 	time::Duration,
-	sync::mpsc,
+	sync::{
+		mpsc,
+		Arc,
+		RwLock
+	},
+	collections::HashMap
 };
 use tokio_tungstenite::{
 	WebSocketStream,
@@ -36,42 +41,55 @@ pub struct SocketHandler {
 
 impl SocketHandler {
 	pub async fn new(
-		port: u32,
-		address: &str,
-		secure: bool,
-		subdirectory: Option<&str>,
-		channel_sender: mpsc::SyncSender<SocketResponse>
+		url: url::Url,
+		channel_sender: mpsc::SyncSender<SocketResponse>,
+		sock_msgs: Arc<RwLock<HashMap<String, mpsc::SyncSender<SocketResponse>>>>
 	) -> Result<SocketHandler, Error> {
-		let sock_res = SocketHandler::get_self_signed_socket(
-			port, address, secure, subdirectory
-		).await?;
+		let sock_res = SocketHandler::get_self_signed_socket(url).await?;
 
 		let (sender, receiver) = sock_res.split();
 
-		SocketHandler::spawn_receiver(receiver, channel_sender);
+		SocketHandler::spawn_receiver(receiver, channel_sender, sock_msgs);
 
 		Ok(SocketHandler { sender })
 	}
 
 	pub fn spawn_receiver(
 		receiver: SplitStream<WebSocketStream<TlsStream<TcpStream>>>,
-		channel_sender: mpsc::SyncSender<SocketResponse>
+		channel_sender: mpsc::SyncSender<SocketResponse>,
+		sock_msgs: Arc<RwLock<HashMap<String, mpsc::SyncSender<SocketResponse>>>>
 	) {
 		tokio::spawn(async move {
 			let mut rec = receiver;
 
 			while let Some(Ok(msg)) = rec.next().await {
 				let txt = match msg {
-					tokio_tungstenite::tungstenite::Message::Text(txt) => Some(txt),
+					Message::Text(txt) => Some(txt),
 					_ => None,
 				};
 
-				if let Some(text) = txt {
-					if let Ok(resp) = serde_json::from_str(&text) {
-						match channel_sender.send(resp) {
-							Err(err) =>
-								eprintln!("Failed to send mpsc message: {:?}", err),
-							_ => ()
+				let resp: Option<SocketResponse> = if let Some(text) = txt {
+					match serde_json::from_str(&text) {
+						Ok(resp) => Some(resp),
+						Err(_) => None
+					}
+				} else {
+					None
+				};
+
+				if let Some(res) = resp {
+					if let Ok(mut msgs) = sock_msgs.write() {
+						let id = res.id.to_owned();
+
+						if let Some(id_send) = msgs.get(&id) {
+							match id_send.send(res) {
+								_ => ()
+							}
+							msgs.remove(&id);
+						} else {
+							match channel_sender.send(res) {
+								_ => ()
+							}
 						}
 					}
 				}
@@ -80,7 +98,7 @@ impl SocketHandler {
 	}
 
 	pub async fn get_self_signed_socket(
-		port: u32, host: &str, secure: bool, subdirectory: Option<&str>
+		url: url::Url
 	) -> Result<WebSocketStream<TlsStream<TcpStream>>, Error> {
 
 		// need this custom connector so that it connects with
@@ -94,7 +112,10 @@ impl SocketHandler {
 
 		let tokio_connector = tokio_native_tls::TlsConnector::from(connector);
 
-		let addr = format!("{}:{}", host, port);
+		let host = url.host().expect("Please supply as socket host")
+			.to_string();
+
+		let addr = format!("{}:{}", host, url.port().unwrap_or(8741));
 
 		// ngl I don't understand this part perfectly
 		// but it was online and it works
@@ -125,15 +146,8 @@ impl SocketHandler {
 			accept_unmasked_frames: false
 		});
 
-		let subdir = subdirectory.unwrap_or("");
-
-		let url = format!("ws{}://{}/{}",
-			if secure { "s" } else { "" }, addr, subdir);
-		let parsed_url = url::Url::parse(&url)
-			.expect(&format!("Failed to parse websocket URL: '{}'", url));
-
 		Ok(tokio_tungstenite::client_async_with_config(
-			parsed_url,
+			url,
 			tls_stream.expect("Valid TLsStream became invalid"),
 			config,
 		).await?.0)

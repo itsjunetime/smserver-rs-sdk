@@ -683,8 +683,8 @@ fn main_cmd(
 	};
 
 	let sock_section = match config.socket {
-		true => match config.data_return || config.return_type.is_some() {
-			true => quote!{
+		true => if config.data_return || config.return_type.is_some() {
+			quote!{
 				let id = match self.socket.#fn_ident(#(#names),*).await {
 					Ok(id) => id,
 					Err(err) => return Err(err.into())
@@ -696,13 +696,14 @@ fn main_cmd(
 				}
 
 				#receiving_section
-			},
-			_ => quote!{
+			}
+		} else {
+			quote!{
 				match self.socket.#fn_ident(#(#names),*).await {
 					Ok(_) => Ok(()),
 					Err(err) => Err(err.into())
 				}
-			},
+			}
 		},
 		_ => quote!{
 			Err(SDKError::ConfigBlocked.into())

@@ -41,7 +41,7 @@ impl RestAPIClient {
 	pub async fn get_url_string(&self, url: &str) -> anyhow::Result<String> {
 		let response = self.client.get(url).send().await?;
 
-		Ok(response.text().await.unwrap_or("".to_owned()))
+		Ok(response.text().await.unwrap_or_else(|_| "".to_owned()))
 	}
 
 	pub async fn get_url_data(&self, url: &str) -> anyhow::Result<Vec<u8>> {
@@ -57,11 +57,11 @@ impl RestAPIClient {
 		let url = self.config.push_to_rest_url(pass);
 		let res = self.get_url_string(&url).await?;
 
-		Ok(res.parse().unwrap_or_else(|_| false))
+		Ok(res.parse().unwrap_or(false))
 	}
 
 	pub async fn check_auth(&mut self) -> anyhow::Result<()> {
-		if !self.authenticated {
+		if self.config.use_rest && !self.authenticated {
 			match self.authenticate().await? {
 				true => self.authenticated = true,
 				false => return Err(SDKError::UnAuthenticated.into()),

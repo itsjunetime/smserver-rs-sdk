@@ -66,27 +66,14 @@ impl APIClient {
 	) -> anyhow::Result<APIClient> {
 		let chunk_size = config.chunk_size;
 		let uses_rest = config.use_rest;
-		let secure = config.secure;
-		let base_url = config.rest_base_url.to_owned();
+		let base_url = config.sock_base_url.to_owned();
 
 		let rest_client = RestAPIClient::new(config);
 		let sock_msgs = Arc::new(RwLock::new(HashMap::new()));
 
 		let url = url::Url::parse(&base_url)?;
 
-		let port = url.port().unwrap_or(8741);
-		let host = match url.host() {
-			None => "".to_owned(),
-			Some(h) => h.to_string()
-		};
-
-		let socket = SocketHandler::new(
-			port as u32,
-			&host,
-			secure,
-			Some(url.path()),
-			sender
-		).await?;
+		let socket = SocketHandler::new(url, sender, sock_msgs.clone()).await?;
 
 		Ok(APIClient{
 			rest_client,
@@ -109,10 +96,7 @@ impl APIClient {
 		attachments: Option<Vec<String>>,
 		photos: Option<Vec<String>>,
 	) -> anyhow::Result<()> {
-		let photos_str = match photos {
-			Some(phs) => Some(phs.join(":")),
-			None => None
-		};
+		let photos_str = photos.map(|p| p.join(":"));
 
 		if self.uses_rest {
 			return self.rest_client
@@ -147,7 +131,7 @@ impl APIClient {
 		};
 
 		let json_info = infos.iter()
-			.zip(attachments.unwrap_or(Vec::new()))
+			.zip(attachments.unwrap_or_default())
 			.map(
 				| (i, a) | {
 					json!({
@@ -180,10 +164,11 @@ impl APIClient {
 				).collect();
 				let base64_chunk = base64::encode(chunk);
 
-				if let Err(err) = self.socket.attachment_data(
+				if let Err(_) = self.socket.attachment_data(
 					id, &msg_id, idx, &base64_chunk
 				).await {
-					eprintln!("aaarrrggghh issue: {:?}", err);
+					//eprintln!("aaarrrggghh issue: {:?}", err);
+					// Do something, I guess??
 				}
 			}
 		}

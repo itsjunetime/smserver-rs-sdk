@@ -1,7 +1,7 @@
 use crate::commands::*;
 use serde::Deserialize;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct SocketResponse {
 	pub id: String,
 	pub command: APICommand,

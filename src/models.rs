@@ -7,6 +7,7 @@ pub struct Conversation {
 	pub latest_text: String,
 	pub has_unread: bool,
 	pub addresses: String, // Or maybe vec?
+	#[serde(default)]
 	pub is_selected: bool
 }
 
@@ -30,8 +31,9 @@ pub struct Message {
 	pub date: i64,
 	pub balloon_bundle_id: String,
 	pub cache_has_attachments: bool,
+	#[serde(default)]
 	pub attachments: Vec<Attachment>,
-	pub imsg: bool,
+	pub imessage: bool,
 	pub is_from_me: bool,
 	pub subject: String,
 	pub text: String,
@@ -39,6 +41,7 @@ pub struct Message {
 	pub associated_message_type: i16,
 	pub sender: Option<String>,
 	pub chat_identifier: Option<String>,
+	#[serde(default)]
 	pub message_type: MessageType,
 }
 
@@ -49,7 +52,7 @@ impl From<&serde_json::Map<String, serde_json::Value>> for Message {
 			date: val["date"].as_i64().unwrap_or(0),
 			balloon_bundle_id: val["balloon_bundle_id"].as_str().unwrap_or("").to_owned(),
 			cache_has_attachments: val["cache_has_attachments"].as_bool().unwrap_or(false),
-			imsg: val["service"].as_str().unwrap_or("") == "iMessage",
+			imessage: val["service"].as_str().unwrap_or("") == "iMessage",
 			is_from_me: val["is_from_me"].as_bool().unwrap_or(false),
 			subject: val["subject"].as_str().unwrap_or("").to_owned(),
 			text: val["text"].as_str().unwrap_or("").to_owned(),
@@ -80,7 +83,7 @@ impl Message {
 			date: 0,
 			balloon_bundle_id: "".to_owned(),
 			cache_has_attachments: false,
-			imsg: true,
+			imessage: true,
 			is_from_me: false,
 			subject: "".to_owned(),
 			text: "".to_owned(),
@@ -100,7 +103,7 @@ impl Message {
 			date: 0,
 			balloon_bundle_id: "".to_owned(),
 			cache_has_attachments: false,
-			imsg: true,
+			imessage: true,
 			is_from_me: false,
 			subject: "".to_owned(),
 			text: "".to_owned(),
@@ -122,9 +125,16 @@ pub enum MessageType {
 	Idle,
 }
 
+impl Default for MessageType {
+	fn default() -> Self {
+		MessageType::Normal
+	}
+}
+
 #[derive(Debug, Deserialize)]
 pub struct Attachment {
 	pub mime_type: String,
+	#[serde(rename = "filename")]
 	pub path: String,
 }
 
