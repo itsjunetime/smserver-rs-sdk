@@ -50,7 +50,7 @@ impl RestAPIClient {
 		Ok(response.bytes().await?.to_vec())
 	}
 
-	pub async fn authenticate(&mut self) -> anyhow::Result<bool> {
+	pub async fn authenticate(&self) -> anyhow::Result<bool> {
 		// authenticate with SMServer so that we can make more requests later
 		// without being denied
 		let pass = format!("requests?password={}", self.config.password());
@@ -61,6 +61,8 @@ impl RestAPIClient {
 	}
 
 	pub async fn check_auth(&mut self) -> anyhow::Result<()> {
+		// this has to be mut since it changes the `authenticated` status of
+		// self if it succeeds in authenticating
 		if self.config.use_rest && !self.authenticated {
 			match self.authenticate().await? {
 				true => self.authenticated = true,
@@ -71,6 +73,8 @@ impl RestAPIClient {
 		Ok(())
 	}
 
+	// these registration functions are currently unused by the SDK, since the host takes care of
+	// registering a socket and all that, but I keep them here just in case I find a use for them.
 	pub async fn register_socket(
 		&self,
 		key: impl Into<String>,

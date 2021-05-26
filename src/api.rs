@@ -57,7 +57,7 @@ impl APIClient {
 			// or Ok(msg.do_command_data())
 		}
 
-		Err(SDKError::MangledSend.into())
+		Err(SDKError::MangledReceive.into())
 	}
 	*/
 
@@ -68,9 +68,12 @@ impl APIClient {
 		let uses_rest = config.use_rest;
 		let base_url = config.sock_base_url.to_owned();
 
+		// for now, we create the RestAPIClient even if we're not using rest.
+		// Should probably fix that up sooner or later.
 		let rest_client = RestAPIClient::new(config);
 		let sock_msgs = Arc::new(RwLock::new(HashMap::new()));
 
+		// parse the url since we need that for settings up the socket
 		let url = url::Url::parse(&base_url)?;
 
 		let socket = SocketHandler::new(url, sender, sock_msgs.clone()).await?;
@@ -88,6 +91,7 @@ impl APIClient {
 		self.rest_client.authenticate().await
 	}
 
+	// I custom-wrote a function for this since it's so complicated to send it over a socket
 	pub async fn send_message(
 		&mut self,
 		chat: String,
@@ -96,32 +100,42 @@ impl APIClient {
 		attachments: Option<Vec<String>>,
 		photos: Option<Vec<String>>,
 	) -> anyhow::Result<()> {
+		// This is how I submit the photos, just use a colon to separate them (since I'm fairly
+		// certain you aren't allowed to have a colon in a filename in xnu.
 		let photos_str = photos.map(|p| p.join(":"));
 
 		if self.uses_rest {
+			// fairly straightforward for this
 			return self.rest_client
 				.send_message(chat, text, subject, photos_str, attachments)
 				.await;
 		}
 
+		// datas: Actual data of the files
+		// infos: (number of messages needed, attachment's id)
 		let (datas, mut infos): (Vec<Vec<u8>>, Vec<(u32, String)>) =
 		match attachments {
 			None => (vec![Vec::new()], Vec::new()),
 			Some(ref files) => files.iter().fold(
 				(Vec::new(), Vec::new()), | (mut d, mut i), f | {
+					// read the data of the file
 					let bin = match std::fs::read(f) {
 						Ok(bin) => bin,
 						Err(_) => Vec::new()
 					};
 
+					// add the data to the data vector
 					d.push(bin);
 
+					// create the id and get the total size
 					let id = uuid::Uuid::new_v4().to_string();
 					let size = match std::fs::metadata(f) {
 						Ok(meta) => meta.len(),
 						Err(_) => 0,
 					};
 
+					// divide size by chunk size to figure out how many messages will be needed to
+					// send this completely over
 					let len = (size as f64 / self.chunk_size as f64).ceil() as u32;
 
 					i.push((len, id));
@@ -130,6 +144,8 @@ impl APIClient {
 				}),
 		};
 
+		// create the JSON info for each attachment. This is what'll be sent with the first message
+		// to tell the host what to expect when I do send the attachment data
 		let json_info = infos.iter()
 			.zip(attachments.unwrap_or_default())
 			.map(
@@ -142,6 +158,7 @@ impl APIClient {
 			})
 			.collect();
 
+		// send the original message
 		let msg_id = match self.socket.send_message(
 			chat,
 			text,
@@ -153,22 +170,28 @@ impl APIClient {
 			Err(err) => return Err(err.into())
 		};
 
+		// iterate over all the attachments
 		for i in infos.iter_mut().zip(datas) {
 			let mut data = i.1;
 			let len = (i.0).0;
 			let id = &(i.0).1;
 
+			// iterate over how many messages will be needed to send the data
 			for idx in 0..=len {
+				// get the chunk. Drain it from the data vector so that we end up with an empty
+				// vector once we've sent the data
 				let chunk: Vec<u8> = data.drain(
 					..std::cmp::min(data.len(), self.chunk_size)
 				).collect();
+
+				// encode it to base64 so that we can actually send it
 				let base64_chunk = base64::encode(chunk);
 
+				// send the data for this chunk
 				if let Err(_) = self.socket.attachment_data(
 					id, &msg_id, idx, &base64_chunk
 				).await {
-					//eprintln!("aaarrrggghh issue: {:?}", err);
-					// Do something, I guess??
+					// Do something, I guess?? Well, maybe just suffer.
 				}
 			}
 		}

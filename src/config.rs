@@ -67,4 +67,19 @@ impl SDKConfig {
 	pub fn push_to_sock_url(&self, url: impl Into<String>) -> String {
 		format!("{}/{}", self.sock_base_url, url.into())
 	}
+
+	pub fn log(log_str: &str) {
+		use std::{
+			fs::OpenOptions,
+			io::Write
+		};
+
+		let mut file = OpenOptions::new()
+			.create(true)
+			.append(true)
+			.open("log.log")
+			.expect("Cannot open log file for writing");
+
+		let _ = writeln!(file, "{}", log_str);
+	}
 }

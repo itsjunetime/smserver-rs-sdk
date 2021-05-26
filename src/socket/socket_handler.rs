@@ -33,6 +33,7 @@ use serde_json::{
 use crate::{
 	commands::*,
 	socket::SocketResponse,
+	SDKConfig
 };
 
 pub struct SocketHandler {
@@ -68,14 +69,21 @@ impl SocketHandler {
 					_ => None,
 				};
 
+				//SDKConfig::log(&format!("txt: {:?}", txt));
+
 				let resp: Option<SocketResponse> = if let Some(text) = txt {
 					match serde_json::from_str(&text) {
 						Ok(resp) => Some(resp),
-						Err(_) => None
+						Err(err) => {
+							//SDKConfig::log(&format!("err decoding: {}", err));
+							None
+						}
 					}
 				} else {
 					None
 				};
+
+				//SDKConfig::log(&format!("resp: {:?}", resp));
 
 				if let Some(res) = resp {
 					if let Ok(mut msgs) = sock_msgs.write() {
@@ -87,6 +95,7 @@ impl SocketHandler {
 							}
 							msgs.remove(&id);
 						} else {
+							//SDKConfig::log(&format!("got response: {:?}", res));
 							match channel_sender.send(res) {
 								_ => ()
 							}
@@ -159,6 +168,8 @@ impl SocketHandler {
 	pub async fn send_command(
 		&mut self, cmd: APICommand, params: Value
 	) -> Result<String, Error> {
+		// this returns the `id` that it generates, so that it can
+		// later be used to grab the response when it comes back in
 		let id = uuid::Uuid::new_v4().to_string();
 
 		let payload = json!({

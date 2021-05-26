@@ -640,7 +640,7 @@ fn main_cmd(
 				let json = match msg.data.as_object() {
 					Some(val) => val,
 					None => {
-						current = 0;
+						current = -1;
 						break;
 					}
 				};
@@ -658,7 +658,7 @@ fn main_cmd(
 				let total = match json[#TOTAL_STR].as_i64() {
 					Some(val) => val,
 					None => {
-						current = 0;
+						current = -1;
 						break;
 					}
 				};
@@ -669,6 +669,7 @@ fn main_cmd(
 			}
 
 			match current {
+				-1 => Err(SDKError::ImproperDataFormat.into()),
 				0 => Err(SDKError::MangledReceive.into()),
 				_ => Ok(total_data)
 			}
@@ -792,28 +793,28 @@ impl CommandConfig {
 					self.subdir = Some(dir.value());
 				},
 				"rest" => if let syn::Lit::Bool(rest) = lit {
-					self.rest = rest.value();
+					self.rest = rest.value;
 				},
 				"socket" => if let syn::Lit::Bool(sock) = lit {
-					self.socket = sock.value();
+					self.socket = sock.value;
 				},
 				"data_return" => if let syn::Lit::Bool(data) = lit {
-					self.data_return = data.value();
+					self.data_return = data.value;
 				},
 				"multipart" => if let syn::Lit::Bool(mult) = lit {
-					self.multipart = mult.value();
+					self.multipart = mult.value;
 				},
 				"files" => if let syn::Lit::Str(fil) = lit {
 					self.files_key = Some(fil.value());
 				},
 				"authenticate" => if let syn::Lit::Bool(auth) = lit {
-					self.authenticate = auth.value();
+					self.authenticate = auth.value;
 				},
 				"return_type" => if let syn::Lit::Str(res) = lit {
 					self.return_type = Some(res.value())
 				},
 				"no_main" => if let syn::Lit::Bool(main) = lit {
-					self.no_main = main.value()
+					self.no_main = main.value
 				},
 				&_ => ()
 			}

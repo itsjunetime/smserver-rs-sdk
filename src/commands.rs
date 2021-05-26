@@ -4,6 +4,48 @@ use serde::Deserialize;
 
 #[derive(Commands, Deserialize, Debug)]
 pub enum APICommand {
+	// so basically the entire API is created through this enum and the `Commands` macro that I
+	// wrote. For each variant, it does three main things:
+	// 1. Unless, within the commands attribute, `rest` is set to false or the variant has no
+	//       `parameters` attribute, it creates a function to send this data through the
+	//       RestAPIClient, using the parameters defined in the `parameters` attribute.
+	//
+	//       If `multipart` is set to true, it sends it as a multipart form, with the key defined by
+	//       `files` taking a Vec<String>, and being the files that are sent through the form. If
+	//       `multipart` is not set or set to false, it sends it as a GET URL Query.
+	//
+	//       Unless `data_return` is true, the RestAPIClient function returns a value of the type
+	//       defined by `return_type`. If `data_return` is true, it returns a Vec<u8> -- the data.
+	//
+	//       You can also change which subdirectory of the rest_base_url the command goes to with
+	//       the `subdir` key in the `command` attribute.
+	//
+	// 2. Unless, within the commands attribute, `socket` is set to false or it has no `parameters`
+	//       attribute, it creates a function to send the data defined in `parameters` through the
+	//       socket, for the purpose described by the variant name.
+	//
+	//       Unless `data_return` is true, the RestAPIClient function returns a value of the type
+	//       defined by `return_type`. If `data_return` is true, it returns a Vec<u8> (the data).
+	//
+	// 3. If 1 and 2 don't happen & the `no_main` attribute is not set, this macro creates a
+	//       function to perform this function from the `APIClient` struct. The function
+	//       automatically checks whether the SDK is connecting via REST or remote websocket, and
+	//       then calls the appropriate function.
+	//
+	// If a variant has a `data` attribute, that means that this data cannot be sent to the host
+	// and the client can only receive this information from the host, through the socket.
+	// - The macro will create a struct which has the fields defined in `data`, plus `id: String`
+	//   and `command: APICommand`.
+	//
+	// - The struct's name will be `${Variant}Notification`, e.g. BatteryStatus =>
+	//   `BatteryStatusNotification`.
+	//
+	// - A function will also be created which automatically converts a `SocketResponse` into the
+	//   generated struct, consuming the SocketResponse in the process.
+	//
+	// This macro also creates an `impl` of APICommand that allows you to get the command string
+	// for each variant (e.g. GetChats => "get-chats")
+
 	#[command(
 		subdir = "requests",
 		return_type = "Vec<crate::models::Conversation>"
