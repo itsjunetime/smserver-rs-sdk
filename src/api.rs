@@ -91,7 +91,8 @@ impl APIClient {
 		self.rest_client.authenticate().await
 	}
 
-	// I custom-wrote a function for this since it's so complicated to send it over a socket
+	// I custom-wrote a function for this since it's so complicated to send it
+	// over a socket
 	pub async fn send_message(
 		&mut self,
 		chat: String,
@@ -100,8 +101,9 @@ impl APIClient {
 		attachments: Option<Vec<String>>,
 		photos: Option<Vec<String>>,
 	) -> anyhow::Result<()> {
-		// This is how I submit the photos, just use a colon to separate them (since I'm fairly
-		// certain you aren't allowed to have a colon in a filename in xnu.
+		// This is how I submit the photos, just use a colon to separate them
+		// (since I'm fairly certain you aren't allowed to have a colon in
+		// a filename in xnu)
 		let photos_str = photos.map(|p| p.join(":"));
 
 		if self.uses_rest {
@@ -134,8 +136,8 @@ impl APIClient {
 						Err(_) => 0,
 					};
 
-					// divide size by chunk size to figure out how many messages will be needed to
-					// send this completely over
+					// divide size by chunk size to figure out how many messages
+					// will be needed to send this completely over
 					let len = (size as f64 / self.chunk_size as f64).ceil() as u32;
 
 					i.push((len, id));
@@ -144,8 +146,9 @@ impl APIClient {
 				}),
 		};
 
-		// create the JSON info for each attachment. This is what'll be sent with the first message
-		// to tell the host what to expect when I do send the attachment data
+		// create the JSON info for each attachment. This is what'll be sent with
+		// the first message to tell the host what to expect when I do send
+		// the attachment data
 		let json_info = infos.iter()
 			.zip(attachments.unwrap_or_default())
 			.map(
@@ -153,7 +156,7 @@ impl APIClient {
 					json!({
 						"size": i.0,
 						"id": i.1,
-						"filename": a
+						"filename": a.split('/').last().unwrap_or(&a)
 					})
 			})
 			.collect();
@@ -177,9 +180,9 @@ impl APIClient {
 			let id = &(i.0).1;
 
 			// iterate over how many messages will be needed to send the data
-			for idx in 0..=len {
-				// get the chunk. Drain it from the data vector so that we end up with an empty
-				// vector once we've sent the data
+			for idx in 0..=(len-1) {
+				// get the chunk. Drain it from the data vector so that we end up
+				// with an empty vector once we've sent the data
 				let chunk: Vec<u8> = data.drain(
 					..std::cmp::min(data.len(), self.chunk_size)
 				).collect();
