@@ -524,6 +524,8 @@ fn parse_data(
 		get_name_val_list(&data)
 	};
 
+	let nvs_len = nvs.len();
+
 	let (values, serials) = nvs.iter()
 		.fold(
 			(Vec::new(), Vec::new()),
@@ -540,10 +542,19 @@ fn parse_data(
 
 				let pstr = path.to_string();
 
+				let getter = if nvs_len == 1 {
+					quote!{ self.data }
+				} else {
+					quote!{
+						self.data.get_mut(#pstr)
+							.unwrap_or(&mut serde_json::Value::Null)
+							.take()
+					}
+				};
+
 				let ser_quote = quote!{
 					let #type_quote = serde_json::from_value(
-						self.data.get_mut(#pstr)
-							.unwrap_or(&mut serde_json::Value::Null).take()
+						#getter
 					)?;
 				};
 

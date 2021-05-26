@@ -33,7 +33,6 @@ use serde_json::{
 use crate::{
 	commands::*,
 	socket::SocketResponse,
-	SDKConfig
 };
 
 pub struct SocketHandler {
@@ -69,21 +68,14 @@ impl SocketHandler {
 					_ => None,
 				};
 
-				//SDKConfig::log(&format!("txt: {:?}", txt));
-
 				let resp: Option<SocketResponse> = if let Some(text) = txt {
 					match serde_json::from_str(&text) {
 						Ok(resp) => Some(resp),
-						Err(err) => {
-							//SDKConfig::log(&format!("err decoding: {}", err));
-							None
-						}
+						Err(_) => None
 					}
 				} else {
 					None
 				};
-
-				//SDKConfig::log(&format!("resp: {:?}", resp));
 
 				if let Some(res) = resp {
 					if let Ok(mut msgs) = sock_msgs.write() {
@@ -95,7 +87,6 @@ impl SocketHandler {
 							}
 							msgs.remove(&id);
 						} else {
-							//SDKConfig::log(&format!("got response: {:?}", res));
 							match channel_sender.send(res) {
 								_ => ()
 							}
