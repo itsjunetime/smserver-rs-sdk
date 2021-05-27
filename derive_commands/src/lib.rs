@@ -645,7 +645,7 @@ fn main_cmd(
 	let receiving_section = match config.data_return {
 		true => quote!{
 			let mut current = 0;
-			let mut total_data: Vec<u8> = Vec::new();
+			let mut strings: Vec<String> = Vec::new();
 
 			while let Ok(msg) = receiver.recv() {
 				let json = match msg.data.as_object() {
@@ -656,14 +656,13 @@ fn main_cmd(
 					}
 				};
 
-				let mut new_data = match base64::decode(
-					json[#DATA_STR].as_str().unwrap()
-				) {
-					Ok(val) => val,
-					Err(err) => return Err(err.into())
-				};
+				let mut new_str = json[#DATA_STR].as_str()
+					.unwrap()
+					.to_string();
 
-				total_data.append(&mut new_data);
+				crate::SDKConfig::log(&format!("got str: {}", new_str));
+
+				strings.push(new_str);
 
 				current += 1;
 				let total = match json[#TOTAL_STR].as_i64() {
@@ -674,6 +673,10 @@ fn main_cmd(
 					}
 				};
 
+				crate::SDKConfig::log(
+					&format!("cur: {}, tot: {}", current, total)
+				);
+
 				if current == total {
 					break;
 				}
@@ -682,7 +685,10 @@ fn main_cmd(
 			match current {
 				-1 => Err(SDKError::ImproperDataFormat.into()),
 				0 => Err(SDKError::MangledReceive.into()),
-				_ => Ok(total_data)
+				_ => match base64::decode(strings.join("")) {
+					Ok(data) => Ok(data),
+					Err(err) => Err(err.into())
+				}
 			}
 		},
 		_ => quote!{

@@ -115,30 +115,28 @@ impl APIClient {
 
 		// datas: Actual data of the files
 		// infos: (number of messages needed, attachment's id)
-		let (datas, mut infos): (Vec<Vec<u8>>, Vec<(u32, String)>) =
+		let (datas, mut infos): (Vec<String>, Vec<(u32, String)>) =
 		match attachments {
-			None => (vec![Vec::new()], Vec::new()),
+			None => (Vec::new(), Vec::new()),
 			Some(ref files) => files.iter().fold(
 				(Vec::new(), Vec::new()), | (mut d, mut i), f | {
 					// read the data of the file
 					let bin = match std::fs::read(f) {
-						Ok(bin) => bin,
-						Err(_) => Vec::new()
+						Ok(bin) => base64::encode(bin),
+						Err(_) => String::new(),
 					};
+
+					let len = bin.len();
 
 					// add the data to the data vector
 					d.push(bin);
 
 					// create the id and get the total size
 					let id = uuid::Uuid::new_v4().to_string();
-					let size = match std::fs::metadata(f) {
-						Ok(meta) => meta.len(),
-						Err(_) => 0,
-					};
 
 					// divide size by chunk size to figure out how many messages
 					// will be needed to send this completely over
-					let len = (size as f64 / self.chunk_size as f64).ceil() as u32;
+					let len = (len as f64 / self.chunk_size as f64).ceil() as u32;
 
 					i.push((len, id));
 
@@ -181,18 +179,16 @@ impl APIClient {
 
 			// iterate over how many messages will be needed to send the data
 			for idx in 0..=(len-1) {
-				// get the chunk. Drain it from the data vector so that we end up
+				// get the chunk. Drain it from the b64 vector so that we end up
 				// with an empty vector once we've sent the data
-				let chunk: Vec<u8> = data.drain(
+				let chunk: String = data.drain(
 					..std::cmp::min(data.len(), self.chunk_size)
 				).collect();
 
-				// encode it to base64 so that we can actually send it
-				let base64_chunk = base64::encode(chunk);
-
+				// the chunk is already base64-encoded, so just
 				// send the data for this chunk
 				if let Err(_) = self.socket.attachment_data(
-					id, &msg_id, idx, &base64_chunk
+					id, &msg_id, idx, &chunk
 				).await {
 					// Do something, I guess?? Well, maybe just suffer.
 				}

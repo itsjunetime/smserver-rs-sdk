@@ -82,10 +82,15 @@ impl SocketHandler {
 						let id = res.id.to_owned();
 
 						if let Some(id_send) = msgs.get(&id) {
+							let last = res.last;
+
 							match id_send.send(res) {
 								_ => ()
 							}
-							msgs.remove(&id);
+
+							if last {
+								msgs.remove(&id);
+							}
 						} else {
 							match channel_sender.send(res) {
 								_ => ()
