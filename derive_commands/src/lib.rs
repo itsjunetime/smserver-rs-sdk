@@ -660,8 +660,6 @@ fn main_cmd(
 					.unwrap()
 					.to_string();
 
-				crate::SDKConfig::log(&format!("got str: {}", new_str));
-
 				strings.push(new_str);
 
 				current += 1;
@@ -672,10 +670,6 @@ fn main_cmd(
 						break;
 					}
 				};
-
-				crate::SDKConfig::log(
-					&format!("cur: {}, tot: {}", current, total)
-				);
 
 				if current == total {
 					break;
