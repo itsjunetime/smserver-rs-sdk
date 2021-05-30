@@ -70,11 +70,15 @@ impl APIClient {
 
 		// for now, we create the RestAPIClient even if we're not using rest.
 		// Should probably fix that up sooner or later.
-		let rest_client = RestAPIClient::new(config);
+		let mut rest_client = RestAPIClient::new(config);
 		let sock_msgs = Arc::new(RwLock::new(HashMap::new()));
 
 		// parse the url since we need that for settings up the socket
 		let url = url::Url::parse(&base_url)?;
+
+		if uses_rest {
+			rest_client.check_auth().await?;
+		}
 
 		let socket = SocketHandler::new(url, sender, sock_msgs.clone()).await?;
 

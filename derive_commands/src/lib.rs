@@ -268,12 +268,6 @@ fn get_rest_fn(
 	let mut nvs = get_name_val_list(&params);
 	let fn_ident = Ident::new(&fn_name, Span::call_site());
 
-	/*let auth = if config.authenticate {
-		quote!{ self.check_auth().await?; }
-	} else {
-		quote!{}
-	};*/
-
 	// the functions for a multipart form and a GET request look dramatically
 	// different, so we have to split here to cater to each
 	if config.multipart {
@@ -403,19 +397,26 @@ fn get_rest_fn(
 		// get the code that states the type of each parameter
 		// the the code that implements adding them into the query string
 		let (values, queries) = nvs.iter()
+			.enumerate()
 			.fold(
 				(Vec::new(), Vec::new()),
-				| (mut vals, mut qs), (path, param_type) | {
+				| (mut vals, mut qs), (i, (path, param_type)) | {
 
 					let path_str = path.to_string();
+
+					let add_char = match i {
+						0 => '?',
+						_ => '&'
+					};
 
 					// this makes the code that actually adds them to the
 					// query string.
 					// Once again, special parsing for options
 					let fn_quote = if param_type.starts_with("Option<") {
 						quote!{
-							query_string = format!("{}&{}{}",
+							query_string = format!("{}{}{}{}",
 								query_string,
+								#add_char,
 								#path_str,
 								if let Some(v) = #path {
 									format!("={}", v.to_string())
@@ -425,8 +426,10 @@ fn get_rest_fn(
 						}
 					} else {
 						quote!{
-							query_string = format!("{}&{}{}",
-								query_string, #path_str,
+							query_string = format!("{}{}{}{}",
+								query_string,
+								#add_char,
+								#path_str,
 								if #path.to_string().len() > 0 {
 									format!("={}", #path.to_string())
 								} else {

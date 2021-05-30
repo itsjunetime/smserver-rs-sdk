@@ -55,8 +55,8 @@ impl RestAPIClient {
 		// without being denied
 		let pass = format!("requests?password={}", self.config.password());
 		let url = self.config.push_to_rest_url(pass);
-		let res = self.get_url_string(&url).await?;
 
+		let res = self.get_url_string(&url).await?;
 		Ok(res.parse().unwrap_or(false))
 	}
 

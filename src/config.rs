@@ -61,7 +61,7 @@ impl SDKConfig {
 	}
 
 	pub fn push_to_rest_url(&self, url: impl Into<String>) -> String {
-		format!("{}/{}", self.rest_base_url, url.into())
+		format!("{}{}", self.rest_base_url, url.into())
 	}
 
 	pub fn push_to_sock_url(&self, url: impl Into<String>) -> String {
