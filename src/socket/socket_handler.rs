@@ -1,6 +1,4 @@
 use std::{
-	thread::sleep,
-	time::Duration,
 	sync::{
 		mpsc,
 		Arc,
@@ -44,7 +42,7 @@ impl SocketHandler {
 		url: url::Url,
 		channel_sender: mpsc::SyncSender<SocketResponse>,
 		sock_msgs: Arc<RwLock<HashMap<String, mpsc::SyncSender<SocketResponse>>>>
-	) -> Result<SocketHandler, Error> {
+	) -> anyhow::Result<SocketHandler> {
 		let sock_res = SocketHandler::get_self_signed_socket(url).await?;
 
 		let (sender, receiver) = sock_res.split();
@@ -103,8 +101,9 @@ impl SocketHandler {
 	}
 
 	pub async fn get_self_signed_socket(
-		url: url::Url
-	) -> Result<WebSocketStream<TlsStream<TcpStream>>, Error> {
+		mut url: url::Url
+	) -> anyhow::Result<WebSocketStream<TlsStream<TcpStream>>> {
+		let _ = url.set_scheme("wss"); // just in case it was set to http before.
 
 		// need this custom connector so that it connects with
 		// SMServer's self-signed cert
@@ -117,32 +116,20 @@ impl SocketHandler {
 
 		let tokio_connector = tokio_native_tls::TlsConnector::from(connector);
 
-		let host = url.host().expect("Please supply as socket host")
+		let host = url.host().expect("Please supply a socket host")
 			.to_string();
 
-		let addr = format!("{}:{}", host, url.port().unwrap_or(8741));
+		let addr = format!("{}:{}",
+			host,
+			url.port_or_known_default().unwrap_or(8741)
+		);
 
 		// ngl I don't understand this part perfectly
 		// but it was online and it works
-		let mut stream_try = TcpStream::connect(&addr).await;
+		let stream = TcpStream::connect(&addr).await?;
 
-		let mut tls_stream: Option<tokio_native_tls::TlsStream<TcpStream>> = None;
-
-		// gotta do a loop so that it keeps trying to
-		// re-connect if it fails initially
-		while tls_stream.is_none() {
-			match stream_try {
-				Ok(stream) => {
-					tls_stream = Some(tokio_connector.connect(&host, stream).await
-						.expect("Couldn't connect to valid TLS Stream"));
-					break;
-				},
-				Err(_) => {
-					sleep(Duration::from_secs(2));
-					stream_try = TcpStream::connect(&addr).await;
-				}
-			}
-		}
+		//let mut tls_stream: Option<tokio_native_tls::TlsStream<TcpStream>> = None;
+		let tls_stream = tokio_connector.connect(&host, stream).await?;
 
 		let config = Some(protocol::WebSocketConfig {
 			max_send_queue: None,
@@ -152,9 +139,7 @@ impl SocketHandler {
 		});
 
 		Ok(tokio_tungstenite::client_async_with_config(
-			url,
-			tls_stream.expect("Valid TLsStream became invalid"),
-			config,
+			url, tls_stream, config,
 		).await?.0)
 	}
 

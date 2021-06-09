@@ -70,6 +70,7 @@ impl APIClient {
 
 		// for now, we create the RestAPIClient even if we're not using rest.
 		// Should probably fix that up sooner or later.
+
 		let mut rest_client = RestAPIClient::new(config);
 		let sock_msgs = Arc::new(RwLock::new(HashMap::new()));
 
