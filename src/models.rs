@@ -11,6 +11,8 @@ pub struct Conversation {
 	pub is_selected: bool,
 	#[serde(default)]
 	pub pinned: bool,
+	#[serde(default)]
+	pub relative_time: String
 }
 
 #[derive(Debug, Deserialize)]
