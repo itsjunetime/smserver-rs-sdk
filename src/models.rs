@@ -8,7 +8,9 @@ pub struct Conversation {
 	pub has_unread: bool,
 	pub addresses: String, // Or maybe vec?
 	#[serde(default)]
-	pub is_selected: bool
+	pub is_selected: bool,
+	#[serde(default)]
+	pub pinned: bool,
 }
 
 #[derive(Debug, Deserialize)]
