@@ -704,11 +704,10 @@ fn main_cmd(
 					Ok(id) => id,
 					Err(err) => return Err(err.into())
 				};
+
 				let (sender, receiver) = std::sync::mpsc::sync_channel(0);
 
-				if let Ok(mut msgs) = self.sock_msgs.write() {
-					msgs.insert(id, sender);
-				}
+				self.sock_msgs.insert(id, sender);
 
 				#receiving_section
 			}

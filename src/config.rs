@@ -1,3 +1,10 @@
+#[macro_export]
+macro_rules! log{
+	($msg:expr$(, $vars:expr)*) => {
+		crate::config::SDKConfig::log(format!($msg$(, $vars)*));
+	}
+}
+
 pub struct SDKConfig {
 	pub rest_base_url: String,
 	pub sock_base_url: String,
@@ -68,7 +75,7 @@ impl SDKConfig {
 		format!("{}/{}", self.sock_base_url, url.into())
 	}
 
-	pub fn log(log_str: &str) {
+	pub fn log(log_str: String) {
 		use std::{
 			fs::OpenOptions,
 			io::Write

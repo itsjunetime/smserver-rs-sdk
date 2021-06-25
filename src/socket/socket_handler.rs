@@ -1,11 +1,8 @@
-use std::{
-	sync::{
-		mpsc,
-		Arc,
-		RwLock
-	},
-	collections::HashMap
+use std::sync::{
+	mpsc,
+	Arc,
 };
+use dashmap::DashMap;
 use tokio_tungstenite::{
 	WebSocketStream,
 	tungstenite::{
@@ -41,7 +38,7 @@ impl SocketHandler {
 	pub async fn new(
 		url: url::Url,
 		channel_sender: mpsc::SyncSender<SocketResponse>,
-		sock_msgs: Arc<RwLock<HashMap<String, mpsc::SyncSender<SocketResponse>>>>
+		sock_msgs: Arc<DashMap<String, mpsc::SyncSender<SocketResponse>>>
 	) -> anyhow::Result<SocketHandler> {
 		let sock_res = SocketHandler::get_self_signed_socket(url).await?;
 
@@ -55,44 +52,48 @@ impl SocketHandler {
 	pub fn spawn_receiver(
 		receiver: SplitStream<WebSocketStream<TlsStream<TcpStream>>>,
 		channel_sender: mpsc::SyncSender<SocketResponse>,
-		sock_msgs: Arc<RwLock<HashMap<String, mpsc::SyncSender<SocketResponse>>>>
+		sock_msgs: Arc<DashMap<String, mpsc::SyncSender<SocketResponse>>>
 	) {
 		tokio::spawn(async move {
 			let mut rec = receiver;
 
-			while let Some(Ok(msg)) = rec.next().await {
-				let txt = match msg {
-					Message::Text(txt) => Some(txt),
-					_ => None,
-				};
+			while let Some(msg_res) = rec.next().await {
+				let sdj = match msg_res {
+					Ok(msg) => {
+						let txt = match msg {
+							Message::Text(txt) => Some(txt),
+							_ => None,
+						};
 
-				let resp: Option<SocketResponse> = if let Some(text) = txt {
-					match serde_json::from_str(&text) {
-						Ok(resp) => Some(resp),
-						Err(_) => None
-					}
-				} else {
-					None
-				};
-
-				if let Some(res) = resp {
-					if let Ok(mut msgs) = sock_msgs.write() {
-						let id = res.id.to_owned();
-
-						if let Some(id_send) = msgs.get(&id) {
-							let last = res.last;
-
-							match id_send.send(res) {
-								_ => ()
-							}
-
-							if last {
-								msgs.remove(&id);
+						if let Some(text) = txt {
+							match serde_json::from_str::<SocketResponse>(&text) {
+								Ok(res) => Some(res),
+								Err(_) => None
 							}
 						} else {
-							match channel_sender.send(res) {
-								_ => ()
-							}
+							None
+						}
+					},
+					Err(_) => None,
+				};
+
+				if let Some(res) = sdj {
+					let id = res.id.to_owned();
+
+					if let Some(id_send) = sock_msgs.get(&id) {
+						let last = res.last;
+
+						match id_send.send(res) {
+							// should probably do some error handling?
+							_ => ()
+						}
+
+						if last {
+							sock_msgs.remove(&id);
+						}
+					} else {
+						match channel_sender.send(res) {
+							_ => () // should also handle here as well
 						}
 					}
 				}

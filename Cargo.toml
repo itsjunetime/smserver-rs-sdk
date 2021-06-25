@@ -19,3 +19,4 @@ thiserror = "1.0"
 derive_commands = { path = "./derive_commands" }
 uuid = { version = "0.8.2", features = ["v4"] }
 base64 = "0.13.0"
+dashmap = "4.0.2"

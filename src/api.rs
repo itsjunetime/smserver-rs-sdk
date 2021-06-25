@@ -1,11 +1,8 @@
-use std::{
-	collections::HashMap,
-	sync::{
-		mpsc,
-		Arc,
-		RwLock
-	}
+use std::sync::{
+	mpsc,
+	Arc,
 };
+use dashmap::DashMap;
 use crate::{
 	rest_api::RestAPIClient,
 	socket::*,
@@ -16,7 +13,7 @@ use serde_json::json;
 pub struct APIClient {
 	pub rest_client: RestAPIClient,
 	pub socket: SocketHandler,
-	pub sock_msgs: Arc<RwLock<HashMap<String, mpsc::SyncSender<SocketResponse>>>>,
+	pub sock_msgs: Arc<DashMap<String, mpsc::SyncSender<SocketResponse>>>,
 	pub uses_rest: bool,
 	pub chunk_size: usize,
 }
@@ -72,7 +69,7 @@ impl APIClient {
 		// Should probably fix that up sooner or later.
 
 		let mut rest_client = RestAPIClient::new(config);
-		let sock_msgs = Arc::new(RwLock::new(HashMap::new()));
+		let sock_msgs = Arc::new(DashMap::new());
 
 		// parse the url since we need that for settings up the socket
 		let url = url::Url::parse(&base_url)?;
