@@ -35,7 +35,6 @@ pub fn commands_derive(input: TokenStream) -> TokenStream {
 		data_return: false,
 		multipart: false,
 		files_key: None,
-		authenticate: true,
 		return_type: None,
 		no_main: false,
 	};
@@ -613,11 +612,8 @@ fn main_cmd(
 
 	let rest_section = match config.rest {
 		true => quote!{
-			if self.rest_client.authenticated {
-				return self.rest_client.#fn_ident(#(#names),*).await;
-			} else {
-				return Err(SDKError::UnAuthenticated.into());
-			}
+			self.rest_client.check_auth().await?;
+			return self.rest_client.#fn_ident(#(#names),*).await;
 		},
 		_ => quote!{
 			return Err(SDKError::ConfigBlocked.into())
@@ -689,11 +685,10 @@ fn main_cmd(
 			}
 		},
 		_ => quote!{
-			if let Ok(msg) = receiver.recv() {
-				return #response;
+			match receiver.recv() {
+				Ok(msg) => #response,
+				_ => Err(SDKError::MangledReceive.into())
 			}
-
-			return Err(SDKError::MangledReceive.into());
 		}
 	};
 
@@ -780,7 +775,6 @@ struct CommandConfig {
 	pub data_return: bool,
 	pub multipart: bool,
 	pub files_key: Option<String>,
-	pub authenticate: bool,
 	pub return_type: Option<String>,
 	pub no_main: bool,
 }
@@ -792,7 +786,6 @@ impl CommandConfig {
 		self.data_return = false;
 		self.multipart = false;
 		self.files_key = None;
-		self.authenticate = true;
 		self.return_type = None;
 		self.no_main = false;
 	}
@@ -819,9 +812,6 @@ impl CommandConfig {
 				},
 				"files" => if let syn::Lit::Str(fil) = lit {
 					self.files_key = Some(fil.value());
-				},
-				"authenticate" => if let syn::Lit::Bool(auth) = lit {
-					self.authenticate = auth.value;
 				},
 				"return_type" => if let syn::Lit::Str(res) = lit {
 					self.return_type = Some(res.value())
