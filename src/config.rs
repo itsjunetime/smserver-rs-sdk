@@ -29,7 +29,7 @@ impl SDKConfig {
 	}
 
 	pub fn with_rest_url(mut self, url: impl Into<String>) -> Self {
-		self.rest_base_url = SDKConfig::append_slash(url);
+		self.rest_base_url = url.into();
 		self
 	}
 
@@ -39,7 +39,7 @@ impl SDKConfig {
 	}
 
 	pub fn with_sock_url(mut self, url: impl Into<String>) -> Self {
-		self.sock_base_url = SDKConfig::append_slash(url);
+		self.sock_base_url = url.into();
 		self
 	}
 
@@ -72,17 +72,7 @@ impl SDKConfig {
 	}
 
 	pub fn push_to_sock_url(&self, url: impl Into<String>) -> String {
-		format!("{}{}", self.sock_base_url, url.into())
-	}
-
-	fn append_slash(url: impl Into<String>) -> String {
-		let url_str = url.into();
-
-		if url_str.ends_with("/") {
-			url_str
-		} else {
-			format!("{}/", url_str)
-		}
+		format!("{}/{}", self.sock_base_url, url.into())
 	}
 
 	pub fn log(log_str: String) {
