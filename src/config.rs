@@ -28,37 +28,37 @@ impl SDKConfig {
 		}
 	}
 
-	pub fn with_rest_url(&mut self, url: impl Into<String>) -> &mut SDKConfig {
+	pub fn with_rest_url(mut self, url: impl Into<String>) -> Self {
 		self.rest_base_url = url.into();
 		self
 	}
 
-	pub fn with_password(&mut self, pass: impl Into<String>) -> &mut SDKConfig {
+	pub fn with_password(mut self, pass: impl Into<String>) -> Self {
 		self.password = pass.into();
 		self
 	}
 
-	pub fn with_sock_url(&mut self, url: impl Into<String>) -> &mut SDKConfig {
+	pub fn with_sock_url(mut self, url: impl Into<String>) -> Self {
 		self.sock_base_url = url.into();
 		self
 	}
 
-	pub fn with_chunk_size(&mut self, size: usize) -> &mut SDKConfig {
+	pub fn with_chunk_size(mut self, size: usize) -> Self {
 		self.chunk_size = size;
 		self
 	}
 
-	pub fn with_timeout(&mut self, time: usize) -> &mut SDKConfig {
+	pub fn with_timeout(mut self, time: usize) -> Self {
 		self.timeout = time;
 		self
 	}
 
-	pub fn with_rest(&mut self, rest: bool) -> &mut SDKConfig {
+	pub fn with_rest(mut self, rest: bool) -> Self {
 		self.use_rest = rest;
 		self
 	}
 
-	pub fn with_secure(&mut self, sec: bool) -> &mut SDKConfig {
+	pub fn with_secure(mut self, sec: bool) -> Self {
 		self.secure = sec;
 		self
 	}
