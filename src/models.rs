@@ -1,6 +1,6 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Conversation {
 	pub display_name: String,
 	pub chat_identifier: String,
@@ -15,7 +15,7 @@ pub struct Conversation {
 	pub relative_time: String
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Message {
 	pub guid: String,
 	pub date_read: Option<i64>,
@@ -78,7 +78,7 @@ impl Message {
 	}
 }
 
-#[derive(PartialEq, Debug, Deserialize)]
+#[derive(PartialEq, Debug, Deserialize, Serialize)]
 pub enum MessageType {
 	Normal,
 	Typing,
@@ -91,9 +91,16 @@ impl Default for MessageType {
 	}
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Attachment {
 	pub mime_type: String,
 	#[serde(rename = "filename")]
 	pub path: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Photo {
+	pub is_favorite: bool,
+	#[serde(rename = "URL")]
+	pub url: String,
 }

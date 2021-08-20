@@ -63,6 +63,7 @@ impl RestAPIClient {
 	pub async fn check_auth(&mut self) -> anyhow::Result<()> {
 		// this has to be mut since it changes the `authenticated` status of
 		// self if it succeeds in authenticating
+
 		if self.config.use_rest && !self.authenticated {
 			match self.authenticate().await? {
 				true => self.authenticated = true,

@@ -1,6 +1,7 @@
 use thiserror::Error;
+use serde::{Deserialize, Serialize};
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Deserialize, Serialize)]
 pub enum SDKError {
 	#[error("Failed to authenticate")]
 	UnAuthenticated,

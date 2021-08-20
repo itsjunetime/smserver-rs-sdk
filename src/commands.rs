@@ -72,6 +72,11 @@ pub enum APICommand {
 	#[serde(rename = "get-messages")]
 	GetMessages,
 
+	#[command(return_type = "crate::models::Conversation")]
+	#[parameters(chat_id = "&str")]
+	#[serde(rename = "get-conversation")]
+	GetConversation,
+
 	#[command(return_type = "String")]
 	#[parameters(name = "&str")]
 	#[serde(rename = "get-name")]
@@ -86,6 +91,16 @@ pub enum APICommand {
 	#[parameters(chat = "&str")]
 	#[serde(rename = "get-icon")]
 	GetIcon,
+
+	#[command(return_type = "Vec<crate::models::Photo>")]
+	#[parameters(photos = "Option<u32>", photos_offset = "Option<u32>", photos_recent = "Option<bool>")]
+	#[serde(rename = "get-photos")]
+	GetPhotos,
+
+	#[command(data_return = true)]
+	#[parameters(photo = "&str")]
+	#[serde(rename = "get-photo")]
+	GetPhoto,
 
 	#[command(
 		subdir = "send",
