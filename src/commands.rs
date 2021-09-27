@@ -88,7 +88,7 @@ pub enum APICommand {
 	GetAttachment,
 
 	#[command(data_return = true)]
-	#[parameters(chat = "&str")]
+	#[parameters(chat_id = "&str")]
 	#[serde(rename = "get-icon")]
 	GetIcon,
 
