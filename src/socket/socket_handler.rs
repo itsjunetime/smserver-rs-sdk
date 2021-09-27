@@ -121,11 +121,17 @@ impl SocketHandler {
 			url.port_or_known_default().unwrap_or(8741)
 		);
 
+		println!("addr: '{}'", addr);
+
 		// ngl I don't understand this part perfectly
 		// but it was online and it works
 		let stream = TcpStream::connect(&addr).await?;
 
+		println!("no stream");
+
 		let tls_stream = tokio_connector.connect(&host, stream).await?;
+
+		println!("tls_Stream, url: '{:?}'", url);
 
 		Ok(tokio_tungstenite::client_async(url, tls_stream).await?.0)
 	}
