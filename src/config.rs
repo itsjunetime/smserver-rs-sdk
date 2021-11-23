@@ -31,7 +31,7 @@ impl SDKConfig {
 	pub fn with_rest_url(mut self, url: impl Into<String>) -> Self {
 		let full_url = url.into();
 
-		if full_url.ends_with("/") {
+		if full_url.ends_with('/') {
 			self.rest_base_url = full_url[..full_url.len() - 1].to_owned();
 		} else {
 			self.rest_base_url = full_url;
@@ -48,7 +48,7 @@ impl SDKConfig {
 	pub fn with_sock_url(mut self, url: impl Into<String>) -> Self {
 		let full_url = url.into();
 
-		if full_url.ends_with("/") {
+		if full_url.ends_with('/') {
 			self.sock_base_url = full_url;
 		} else {
 			self.sock_base_url = format!("{}/", full_url);

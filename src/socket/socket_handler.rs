@@ -58,11 +58,8 @@ impl SocketHandler {
 
 			while let Some(msg_res) = rec.next().await {
 				let res: SocketResponse = match msg_res {
-					Ok(msg) => match msg {
-						Message::Text(txt) => match serde_json::from_str(&txt) {
-							Ok(res) => res,
-							_ => continue,
-						},
+					Ok(Message::Text(txt)) => match serde_json::from_str(&txt) {
+						Ok(res) => res,
 						_ => continue,
 					},
 					_ => continue,
@@ -73,15 +70,14 @@ impl SocketHandler {
 				let should_remove = if let Some(id_send) = sock_msgs.get(&id) {
 					let last = res.last;
 
-					match id_send.send(res) {
+					if let Err(_err) = id_send.send(res) {
 						// should probably do some error handling?
-						_ => ()
 					}
 
 					last
 				} else {
-					match channel_sender.send(res) {
-						_ => () // should also handle here as well
+					if let Err(_err) = channel_sender.send(res) {
+						// should also handle here as well
 					}
 
 					false

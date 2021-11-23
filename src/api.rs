@@ -189,7 +189,7 @@ impl APIClient {
 
 				// the chunk is already base64-encoded, so just
 				// send the data for this chunk
-				if let Err(_) = self.socket.attachment_data(
+				if let Err(_err) = self.socket.attachment_data(
 					id, &msg_id, idx, &chunk
 				).await {
 					// Do something, I guess?? Well, maybe just suffer.
