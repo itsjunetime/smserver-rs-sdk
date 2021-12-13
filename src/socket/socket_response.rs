@@ -1,7 +1,7 @@
 use crate::commands::*;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct SocketResponse {
 	#[serde(default)]
 	pub id: String,
