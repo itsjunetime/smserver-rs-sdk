@@ -2,7 +2,7 @@ use derive_commands::Commands;
 use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 
-#[derive(Commands, Deserialize, Serialize, Debug)]
+#[derive(Commands, Deserialize, Serialize, Debug, Clone)]
 pub enum APICommand {
 	// so basically the entire API is created through this enum and the `Commands`
 	// macro that I wrote. For each variant, it does three main things:
