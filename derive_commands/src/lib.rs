@@ -704,7 +704,7 @@ fn main_cmd(
 					Err(err) => return Err(err.into())
 				};
 
-				let (sender, receiver) = std::sync::mpsc::sync_channel(0);
+				let (sender, receiver) = crossbeam_channel::unbounded();
 
 				self.sock_msgs.insert(id, sender);
 

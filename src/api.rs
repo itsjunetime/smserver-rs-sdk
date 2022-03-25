@@ -1,7 +1,4 @@
-use std::sync::{
-	mpsc,
-	Arc,
-};
+use std::sync::Arc;
 use dashmap::DashMap;
 use crate::{
 	rest_api::RestAPIClient,
@@ -13,7 +10,7 @@ use serde_json::json;
 pub struct APIClient {
 	pub rest_client: RestAPIClient,
 	pub socket: SocketHandler,
-	pub sock_msgs: Arc<DashMap<String, mpsc::SyncSender<SocketResponse>>>,
+	pub sock_msgs: Arc<DashMap<String, crossbeam_channel::Sender<SocketResponse>>>,
 	pub uses_rest: bool,
 	pub chunk_size: usize,
 }
@@ -24,11 +21,11 @@ impl APIClient {
 	// of the socket handler.
 	//
 	// Then, every time the socket handler receives a new message,
-	// it automatically grabs the mpsc::Sender that relates to the id of the msg.
+	// it automatically grabs the crossbeam_channel::Sender that relates to the id of the msg.
 	// It sends the socket response through the sender, which is received by
 	// the receiver who is awaiting a message.
 	//
-	// If there is no sender, it just sends the data through an mpsc::sender that
+	// If there is no sender, it just sends the data through an crossbeam_channel::Sender that
 	// the user will have passed in when they created this
 	//
 	// This is the template for how each of the API communication functions
@@ -42,7 +39,7 @@ impl APIClient {
 		}
 
 		let id = self.socket.do_command(param).await?;
-		let (sender, receiver) = mpsc::channel();
+		let (sender, receiver) = crossbeam_channel::unbounded();
 
 		self.sock_msgs.insert(id, sender);
 
@@ -59,7 +56,7 @@ impl APIClient {
 	*/
 
 	pub async fn new(
-		config: SDKConfig, sender: mpsc::SyncSender<SocketResponse>
+		config: SDKConfig, sender: crossbeam_channel::Sender<SocketResponse>
 	) -> anyhow::Result<APIClient> {
 		let chunk_size = config.chunk_size;
 		let uses_rest = config.use_rest;

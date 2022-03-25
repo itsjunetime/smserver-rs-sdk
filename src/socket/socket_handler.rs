@@ -1,7 +1,4 @@
-use std::sync::{
-	mpsc,
-	Arc,
-};
+use std::sync::Arc;
 use dashmap::DashMap;
 use tokio_tungstenite::{
 	WebSocketStream,
@@ -36,8 +33,8 @@ pub struct SocketHandler {
 impl SocketHandler {
 	pub async fn new(
 		url: url::Url,
-		channel_sender: mpsc::SyncSender<SocketResponse>,
-		sock_msgs: Arc<DashMap<String, mpsc::SyncSender<SocketResponse>>>
+		channel_sender: crossbeam_channel::Sender<SocketResponse>,
+		sock_msgs: Arc<DashMap<String, crossbeam_channel::Sender<SocketResponse>>>
 	) -> anyhow::Result<SocketHandler> {
 		let sock_res = SocketHandler::get_self_signed_socket(url).await?;
 
@@ -50,8 +47,8 @@ impl SocketHandler {
 
 	pub fn spawn_receiver(
 		receiver: SplitStream<WebSocketStream<TlsStream<TcpStream>>>,
-		channel_sender: mpsc::SyncSender<SocketResponse>,
-		sock_msgs: Arc<DashMap<String, mpsc::SyncSender<SocketResponse>>>
+		channel_sender: crossbeam_channel::Sender<SocketResponse>,
+		sock_msgs: Arc<DashMap<String, crossbeam_channel::Sender<SocketResponse>>>
 	) {
 		tokio::spawn(async move {
 			let mut rec = receiver;
