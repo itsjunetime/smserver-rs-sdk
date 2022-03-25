@@ -41,7 +41,7 @@ impl RestAPIClient {
 	pub async fn get_url_string(&self, url: &str) -> anyhow::Result<String> {
 		let response = self.client.get(url).send().await?;
 
-		Ok(response.text().await.unwrap_or_else(|_| "".to_owned()))
+		Ok(response.text().await?)
 	}
 
 	pub async fn get_url_data(&self, url: &str) -> anyhow::Result<Vec<u8>> {

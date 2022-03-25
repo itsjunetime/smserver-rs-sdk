@@ -1,2 +1,4 @@
 /target
 derive_commands/target
+Cargo.lock
+derive_commands/Cargo.lock
